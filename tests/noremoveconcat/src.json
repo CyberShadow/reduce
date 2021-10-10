@@ -88,7 +88,7 @@
                             {
                                 "children": [
                                     {
-                                        "head": "\/\/ DustMiteNoRemoveStart\nunittest\n",
+                                        "head": "\/\/ reduceNoRemoveStart\nunittest\n",
                                         "noRemove": true
                                     },
                                     {
@@ -100,7 +100,7 @@
                                 "noRemove": true
                             },
                             {
-                                "head": "\/\/ DustMiteNoRemoveStop\n"
+                                "head": "\/\/ reduceNoRemoveStop\n"
                             },
                             {}
                         ],

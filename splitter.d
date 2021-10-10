@@ -1,5 +1,5 @@
 /// Simple source code splitter
-/// Written by Vladimir Panteleev <vladimir@thecybershadow.net>
+/// Written by Vladimir Panteleev <reduce@cy.md>
 /// License: Boost Software License, Version 1.0
 
 module splitter;
@@ -341,7 +341,7 @@ struct DSplitter
 		[";", "{"] ~ blockKeywords,
 		["import"],
 		// From http://wiki.dlang.org/Operator_precedence
-		// Some items are listed twice, DustMite does not distinguish binary/prefix/postfix operators
+		// Some items are listed twice, we do not distinguish binary/prefix/postfix operators
 		[".."],
 		[","],
 		["=>"],

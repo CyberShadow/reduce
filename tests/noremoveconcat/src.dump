@@ -37,10 +37,10 @@
         ";\n\n"
       ]
       [! // Pair
-        [! "// DustMiteNoRemoveStart\nunittest\n" ]
+        [! "// reduceNoRemoveStart\nunittest\n" ]
         [! "{\n" "}\n" /* { */ ]
       ]
-      [ "// DustMiteNoRemoveStop\n" ]
+      [ "// reduceNoRemoveStop\n" ]
       [ /* Args root */ ]
     ]
   ]

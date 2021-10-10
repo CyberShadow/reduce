@@ -1,8 +1,8 @@
-/// DustMite, a general-purpose data reduction tool
-/// Written by Vladimir Panteleev <vladimir@thecybershadow.net>
+/// reduce, a general-purpose data reduction tool
+/// Written by Vladimir Panteleev <reduce@cy.md>
 /// License: Boost Software License, Version 1.0
 
-module dustmite;
+module reduce;
 
 import core.atomic;
 import core.thread;
@@ -206,11 +206,11 @@ int main(string[] args)
 		version (Dlang_Tools)
 			enum source = "dlang/tools";
 		else
-		version (Dustmite_CustomSource) // Packaging Dustmite separately for a distribution?
+		version (Reduce_CustomSource) // Packaging reduce separately for a distribution?
 			enum source = import("source");
 		else
 			enum source = "upstream";
-		stdout.writeln("DustMite build ", __DATE__, " (", source, "), built with ", __VENDOR__, " ", __VERSION__);
+		stdout.writeln("reduce build ", __DATE__, " (", source, "), built with ", __VENDOR__, " ", __VERSION__);
 		if (args.length == 1)
 			return 0;
 	}
@@ -281,7 +281,7 @@ EOS");
 		stderr.write(q"EOS
 
 Full documentation can be found on the GitHub wiki:
-  https://github.com/CyberShadow/DustMite/wiki
+  https://github.com/CyberShadow/reduce/wiki
 EOS");
 		return showHelp ? 0 : 64; // EX_USAGE
 	}
@@ -376,7 +376,7 @@ EOS");
 		resultDir = dirSuffix("reduced", No.temp);
 		if (resultDir.exists)
 		{
-			stderr.writeln("Hint: read https://github.com/CyberShadow/DustMite/wiki#result-directory-already-exists");
+			stderr.writeln("Hint: read https://github.com/CyberShadow/reduce/wiki#result-directory-already-exists");
 			throw new Exception("Result directory already exists");
 		}
 	}
@@ -398,7 +398,7 @@ EOS");
 					" instead of " ~ tester.escapeShellFileName());
 			if (!noRedirect)
 				stderr.writeln("Hint: use --no-redirect to see test script output");
-			stderr.writeln("Hint: read https://github.com/CyberShadow/DustMite/wiki#initial-test-fails");
+			stderr.writeln("Hint: read https://github.com/CyberShadow/reduce/wiki#initial-test-fails");
 			throw new Exception("Initial test fails: " ~ nullResult.reason);
 		}
 	}
@@ -436,7 +436,7 @@ EOS");
 		}
 		else
 		{
-			stderr.writeln("Hint: read https://github.com/CyberShadow/DustMite/wiki#reduced-to-empty-set");
+			stderr.writeln("Hint: read https://github.com/CyberShadow/reduce/wiki#reduced-to-empty-set");
 			stderr.writefln("Done in %s tests and %s; %s to empty set", tests, duration, resultAdjective);
 		}
 	}
@@ -2407,7 +2407,7 @@ void saveTrace(Entity root, Reduction[] reductions, string dir, bool result)
 
 void applyNoRemoveMagic(Entity root)
 {
-	enum MAGIC_PREFIX = "DustMiteNoRemove";
+	enum MAGIC_PREFIX = "reduceNoRemove";
 	enum MAGIC_START = MAGIC_PREFIX ~ "Start";
 	enum MAGIC_STOP  = MAGIC_PREFIX ~ "Stop";
 

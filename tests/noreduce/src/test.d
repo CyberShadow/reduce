@@ -3,8 +3,8 @@ import std.stdio;
 void main()
 {
 	writeln("foo");
-	//DustMiteNoRemoveStart
+	//reduceNoRemoveStart
 	writeln("bar");
-	//DustMiteNoRemoveStop
+	//reduceNoRemoveStop
 	writeln("baz");
 }

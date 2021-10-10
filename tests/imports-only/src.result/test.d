@@ -1,6 +1,6 @@
 import std.stdio;
 
-// DustMiteNoRemoveStart
+// reduceNoRemoveStart
 
 void main()
 {

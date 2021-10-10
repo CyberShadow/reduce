@@ -38,7 +38,7 @@
           ]
           [! // ;
             [!
-              [! "	//DustMiteNoRemoveStart\n	writeln" ]
+              [! "	//reduceNoRemoveStart\n	writeln" ]
               [! // (
                 "("
                 [! "\"bar\"" ]
@@ -49,7 +49,7 @@
           ]
           [ // ;
             [
-              [ "	//DustMiteNoRemoveStop\n	writeln" ]
+              [ "	//reduceNoRemoveStop\n	writeln" ]
               [ // (
                 "("
                 [ "\"baz\"" ]

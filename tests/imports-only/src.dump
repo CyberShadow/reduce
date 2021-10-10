@@ -114,7 +114,7 @@
       [! // Pair
         [!
           [!
-            [! "// DustMiteNoRemoveStart\n\nvoid " ]
+            [! "// reduceNoRemoveStart\n\nvoid " ]
             [! "main" ]
           ]
           [! "(" ")\n" /* ( */ ]

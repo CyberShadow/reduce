@@ -1,7 +1,7 @@
 import sub.sub;
 
-// DustMiteNoRemoveStart
+// reduceNoRemoveStart
 unittest
 {
 }
-// DustMiteNoRemoveStop
+// reduceNoRemoveStop

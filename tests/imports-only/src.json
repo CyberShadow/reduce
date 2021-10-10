@@ -309,7 +309,7 @@
                                             {
                                                 "children": [
                                                     {
-                                                        "head": "\/\/ DustMiteNoRemoveStart\n\nvoid ",
+                                                        "head": "\/\/ reduceNoRemoveStart\n\nvoid ",
                                                         "noRemove": true
                                                     },
                                                     {
