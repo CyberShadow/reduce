@@ -177,7 +177,13 @@ Basic usage
 
   <pre>reduce <i>ORACLE</i> <i>DIRECTORY</i></pre>
 
-  Same as above, except *`ORACLE`* is executed in (modified) copies of the directory.
+  Same as above. You will probably want to <code>cd <i>DIRECTORY</i></code> as the first thing in *`ORACLE`*.
+
+  Alternatively, you may use:
+
+  <pre>reduce <i>ORACLE</i> -C <i>DIRECTORY</i> .</pre>
+
+  In this case, *`ORACLE`* will be executed in (modified) copies of the directory.
 
   The final result of the reduction will by default be saved to <code><i>DIRECTORY</i>.result</code>.
   </details>
