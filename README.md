@@ -33,7 +33,7 @@ Example applications
   If your compiler is called `gcc`, and it is crashing with the error message `internal compiler error`, 
   a typical invocation would be:
 
-      reduce program.c 'gcc program.c 2>&1 | grep "internal compiler error"'
+      reduce 'gcc program.c 2>&1 | grep "internal compiler error"' program.c
   </details>
 
 - <details><summary>Narrow down the cause of a confusing error message</summary><p></p>
@@ -49,7 +49,7 @@ Example applications
 
   The would-be invocation is similar to the above:
 
-      reduce input.foo 'foo-tool input.foo 2>&1 | grep "failed to frobnicate whatsits"'
+      reduce 'foo-tool input.foo 2>&1 | grep "failed to frobnicate whatsits"' input.foo
   </details>
 
 - <details><summary>Reduce a large Git commit to a minimal diff</summary><p></p>
@@ -88,7 +88,7 @@ Example applications
 
   5. Invoke `reduce` as:
 
-         reduce commit.patch -f oracle.sh
+         reduce -f oracle.sh commit.patch
   </details>
 
 - <details><summary>Reduce a Git commit set</summary><p></p>
@@ -130,7 +130,7 @@ Example applications
 
   5. Invoke `reduce` as:
 
-         reduce commits.txt --syntax=lines -f oracle.sh
+         reduce -f oracle.sh --syntax=lines commits.txt
   </details>
 
 - <details><summary>Obfuscate proprietary code before posting it online</summary><p></p>
@@ -146,7 +146,7 @@ Example applications
 
   A typical invocation would thus be:
 
-      reduce --obfuscate program.c 'gcc program.c 2>&1 | grep "internal compiler error"'
+      reduce 'gcc program.c 2>&1 | grep "internal compiler error"' program.c --obfuscate
   </details>
 
 
@@ -155,7 +155,7 @@ Basic usage
 
 - <details><summary>Reduce a file</summary><p></p>
 
-  <pre>reduce <i>FILE</i> <i>ORACLE</i></pre>
+  <pre>reduce <i>ORACLE</i> <i>FILE</i></pre>
 
   *`ORACLE`* is a shell command, which should return 0 if the *`FILE`* variation in the current directory 
   is a good reduction (continues holding the desired properties), or non-zero otherwise.
@@ -175,7 +175,7 @@ Basic usage
 
 - <details><summary>Reduce a directory</summary><p></p>
 
-  <pre>reduce <i>DIRECTORY</i> <i>ORACLE</i></pre>
+  <pre>reduce <i>ORACLE</i> <i>DIRECTORY</i></pre>
 
   Same as above, except *`ORACLE`* is executed in (modified) copies of the directory.
 
@@ -186,16 +186,16 @@ Basic usage
 
   If the oracle shell command is too long to be expressed on `reduce`'s command line, a shell script can be used instead:
 
-  <pre>reduce <i>FILE</i> -f <i>ORACLE-FILE</i></pre>
+  <pre>reduce -f <i>ORACLE-FILE</i> <i>FILE</i></pre>
 
   This is the same as above, except *`ORACLE-FILE`* is a file instead of a shell command.
 
-  This invocation is equivalent to <code>reduce <i>FILE</i> "$PWD/<i>ORACLE-FILE</i>"</code>.
+  This invocation is equivalent to <code>reduce "$PWD/<i>ORACLE-FILE</i>" <i>FILE</i></code>.
   </details>
 
 - <details><summary>Reduce from standard input</summary><p></p>
 
-  <pre>... | reduce - --syntax=<i>SYNTAX</i> <i>ORACLE</i>  | ...</pre>
+  <pre>... | reduce <i>ORACLE</i> --syntax=<i>SYNTAX</i> - | ...</pre>
 
   *`SYNTAX`* should specify the syntax that the input is in.
 
