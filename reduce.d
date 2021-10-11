@@ -2040,6 +2040,7 @@ Lookahead[] lookaheadProcesses;
 
 TestResult[EntityHash] lookaheadResults;
 
+// Exponential moving average
 struct AccumulatingPredictor(double exp)
 {
 	double r = 0.5;
