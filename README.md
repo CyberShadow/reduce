@@ -230,7 +230,8 @@ Basic usage
 
   This mode has an additional requirement for *`ORACLE`*:
   it, or any command invoked by it, should not create or modify files outside the current directory
-  (at least, without adequate precautions such as locking or unique filenames).
+  in a way that could affect concurrent executions
+  (i.e., without adequate precautions such as locking or unique filenames).
   </details>
 
 Run `reduce --help` for all options.  
