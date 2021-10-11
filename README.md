@@ -3,7 +3,7 @@
 reduce
 ======
 
-<img align="right" src="https://dump.thecybershadow.net/6b58560174d8f1f5c0d15315fe6ab021/anim.svgz">
+<img align="right" src="https://dump.thecybershadow.net/6b58560174d8f1f5c0d15315fe6ab021/anim.svgz" title="Illustration of reducing a D program, with the condition that it successfully compiles, runs, and prints &quot;42&quot;">
 
 `reduce` is a general-purpose data reduction tool. 
 Given a dataset (in one or more files), it *reduces* it to a minimal variation 
