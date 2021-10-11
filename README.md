@@ -170,7 +170,7 @@ Basic usage
   Thus, the oracle command always runs in a temporary directory holding a different version of the file every time; 
   it should therefore not make any assumptions about the current directory, other than that it holds a copy of the *`FILE`* to test.
 
-  The final result of the reduction will by default be saved to <code><i>FILE</i>.result/<i>FILE</i></code>.
+  The final result of the reduction will by default be saved to <code>reduced/<i>FILE</i></code>.
   </details>
 
 - <details><summary>Reduce a directory</summary><p></p>
@@ -185,7 +185,7 @@ Basic usage
 
   In this case, *`ORACLE`* will be executed in (modified) copies of the directory.
 
-  The final result of the reduction will by default be saved to <code><i>DIRECTORY</i>.result</code>.
+  The final result of the reduction will by default be saved to <code><i>DIRECTORY</i>.reduced</code>.
   </details>
 
 - <details><summary>Reduce using a test script</summary><p></p>
