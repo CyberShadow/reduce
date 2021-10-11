@@ -205,6 +205,17 @@ Basic usage
   `reduce` will by default produce the final result of the reduction on its standard output.
   </details>
 
+- <details><summary>Reduce in parallel</summary><p></p>
+
+  You can greatly speed up reductions by enabling parallelism / lookahead:
+
+  <pre>reduce -j <i>ORACLE</i> <i>FILE</i></pre>
+
+  This mode has an additional requirement for *`ORACLE`*:
+  it, or any command invoked by it, should not create or modify files outside the current directory
+  (at least, without adequate precautions such as locking or unique filenames).
+  </details>
+
 Run `reduce --help` for all options.  
 Additional documentation and examples can be found on [the GitHub wiki](https://github.com/CyberShadow/reduce/wiki).
 
