@@ -188,6 +188,17 @@ Basic usage
   The final result of the reduction will by default be saved to <code><i>DIRECTORY</i>.reduced</code>.
   </details>
 
+- <details><summary>Reduce multiple files</summary><p></p>
+
+  <pre>reduce <i>ORACLE</i> <i>FILE-1</i> <i>FILE-2</i>...</pre>
+
+  All specified files will be parsed and subjected to reduction.
+
+  The relative path of files will be preserved; use `-C` to change the base from which the relative path is taken.
+
+  The final result of the reduction will by default be saved to <code>reduced/<i>FILE-1</i></code>, <code>reduced/<i>FILE-2</i></code> etc.
+  </details>
+
 - <details><summary>Reduce using a test script</summary><p></p>
 
   If the oracle shell command is too long to be expressed on `reduce`'s command line, a shell script can be used instead:
