@@ -245,7 +245,7 @@ Supported options:
                        %-(%s, %)
   --json             Load PATH as a JSON file (same syntax as --dump-json)
   --no-redirect      Don't redirect stdout/stderr streams of test command
-  --temp-dir         Write and run reduction candidates in this directory
+  --temp-dir DIR     Write and run reduction candidates in this directory
   -j[N]              Use N look-ahead processes (%d by default)
 EOS", args[0], splitterNames, totalCPUs);
 
