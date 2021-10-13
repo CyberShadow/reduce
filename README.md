@@ -234,7 +234,8 @@ Basic usage
   (i.e., without adequate precautions such as locking or unique filenames).
   </details>
 
-Run `reduce --help` for all options.  
+See the [man page](https://cy.md/reduce/) for a detailed reference.
+
 Additional documentation and examples can be found on [the GitHub wiki](https://github.com/CyberShadow/reduce/wiki).
 
 
