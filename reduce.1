@@ -1,0 +1,416 @@
+.TH REDUCE 1
+.SH NAME
+reduce \- reduces data according to a condition
+.SH SYNOPSIS
+.nf
+\fBreduce\fP [\fIOPTION\fP]...    \fIORACLE\fP         \fIINPUT\fP...
+\fBreduce\fP [\fIOPTION\fP]... -f \fIORACLE-PROGRAM\fP \fIINPUT\fP...
+.fi
+.SH DESCRIPTION
+\fBreduce\fP is a general-purpose data reduction tool.
+
+For an introduction, please see the README:
+
+.I https://github.com/CyberShadow/reduce#readme
+.SH ORACLE
+\fIORACLE\fP is a shell command, which \fBreduce\fP will invoke to test if a reduction candidate holds the desired condition.
+
+If \fIORACLE\fP is \fB-\fP, \fBreduce\fP will read the shell command from standard input.
+
+If \fIORACLE\fP is the empty string, \fBreduce\fP will exit before starting the reduction,
+but still perform all tasks up to that point.
+
+Alternatively, \fB-f\fP may be used to specify the filename of an \fIORACLE-PROGRAM\fP.
+In this case, \fBreduce\fP will execute the specified file directly.
+
+The oracle is expected to fulfill the following contract:
+
+.IP 1. 3
+The oracle will receive the candidate dataset to test as the current directory that it is executed under.
+
+If \fBreduce\fP was invoked with \fIINPUT\fP as \fB-\fP, then the dataset shall be provided on standard input instead.
+.IP 2.
+The oracle should exit with status \fB0\fP if the \fIINPUT\fP variation in the current directory
+satisfies the desired condition (valid reduction), and non-zero otherwise.
+
+It is expected to return 0 if \fIINPUT\fP is provided with no modifications.
+.IP 3.
+The effect of executing the oracle should be entirely self-contained within the current directory:
+it should not create or modify any data outside of the current directory,
+in such a way that it would affect any future oracle execution.
+.IP 4.
+If \fB-j\fP is used: The oracle should also not create or modify any data outside of the current directory,
+in such a way that it would affect any \fIconcurrent\fP oracle execution.
+.IP 5.
+The oracle should not access any data outside of the current directory,
+which may change during the reduction in such a way as to affect the oracle's result.
+
+.SH INPUT
+
+\fIINPUT\fP is a path to a file or directory to add to the dataset to reduce.
+
+Each instance of \fIINPUT\fP adds the contents of the path to the dataset,
+under the path relative to the current root. Use \fB-C\fP to change the current root.
+
+Directories are added recursively. Symbolic links are added as-is (and are not traversed).
+
+Alternatively, \fIINPUT\fP can be \fB-\fP to indicate standard input.
+In this mode, \fIORACLE\fP should read the dataset to test from standard input as well.
+A temporary directory will still be created, so it is safe for it to create temporary files.
+\fBreduce\fP will by default produce the final result of the reduction on its standard output.
+
+Input options:
+
+.TP
+\fB-C\fP \fIPATH\fP
+Set the root for successive \fIINPUT\fP paths.
+
+Example: \fB-C foo bar/baz.c\fP will add \fBfoo/bar/baz.c\fP as \fBbar/baz.c\fP.
+
+This option is order-sensitive, i.e. it affects all \fIINPUT\fP paths that follow.
+
+.SH SYNTAX
+
+Each file in \fIINPUT\fP is parsed according to a set of rules, which indicate the syntax of the file (and therefore how to parse it).
+In our case, a syntax is an algorithm which splits an array of bytes into a hierarchy which covers the entire input and describes the structure of the file.
+
+\fBreduce\fP includes syntax implementations for general and some common formats, and can utilize external implementations.
+
+Syntax options:
+
+\fB--syntax=\fP\fISYNTAX\fP
+.br
+\fB--syntax=\fP\fIPATTERN\fP:\fISYNTAX\fP
+.br
+.RS
+Adds a rule for which syntax to use when parsing \fIINPUT\fP files.
+
+\fIPATTERN\fP is a shell pattern (such as \fB*.txt\fP). If omitted, it defaults to all files (\fB*\fP).
+
+\fISYNTAX\fP is the name of a built-in or external syntax parser.
+
+File parsing in done in two steps:
+
+.IP 1. 3
+The file name is checked against these rules to determine the syntax to use.
+
+If none of the rules (built-in or user-specified) match, the file extension (without \fB.\fP) is used as the name of the syntax to use.
+
+.IP 2.
+After determining the syntax to use,
+\fBreduce\fP will first check if a program named \fBreduce-syntax-\fISYNTAX\fR exists.
+If it is exists, it is invoked to parse the file.
+
+Otherwise, if a built-in implementation of \fISYNTAX\fP exists, it is used.
+
+Otherwise, if the syntax to use (built-in or external) does not exist, the built-in \fBfile\fP syntax is used
+(load the entire file into a single node, without further processing).
+
+.RE
+
+.TP
+\fB--syntax-\fISYNTAX\fP-\fINAME\fP=\fIVALUE\fP
+Configures the syntax parser \fISYNTAX\fP and sets the option \fINAME\fP to \fIVALUE\fP.
+
+Example: \fB--syntax-indent-tabwidth=8\fP will set the option \fBtabwidth\fP for the syntax \fBindent\fP to \fB8\fP.
+
+.RE
+These options are order-sensitive, i.e. they affect all \fIINPUT\fP paths that follow.
+
+Instructions for authoring an external syntax implementation can be found here:
+
+.I https://github.com/CyberShadow/reduce/wiki/External-syntax-implementations
+
+.SH OUTPUT
+
+Unless overridden with \fB-i\fP, \fB-o\fP, or \fB-O\fP,
+the output (reduction result) will be saved to a location which depends on the invocation:
+
+.IP \[bu] 2
+If \fIINPUT\fP is \fB-\fP (standard input), save to standard output (same as: \fB-o -\fP);
+.IP \[bu]
+If there is only one \fIINPUT\fP, and it is a directory, save to \fIINPUT\fP\fB.reduced\fP (same as: \fB-o \fIINPUT\fP.reduced\fR);
+.IP \[bu]
+Otherwise, create the directory \fBreduced\fP, and save the result there (same as: \fB-O reduced\fR).
+.RE
+
+Output options:
+
+.TP
+\fB-i\fR, \fB--in-place\fR
+Overwrite each \fIINPUT\fP with the result of reducing it.
+
+If \fIINPUT\fP is a directory, then contained files that were deleted as part of the reduction will be deleted in \fIINPUT\fP as well.
+
+Note: \fBreduce\fP does not create backup files.
+
+.TP
+\fB-o\fP \fIPATH\fR, \fB--output=\fP\fIPATH\fR
+Save the result of reducing the corresponding \fIINPUT\fP to the given location.
+
+If there in more than one \fIINPUT\fP, then there must be the same number of \fB-o\fP options.
+
+If \fIPATH\fP is \fB-\fP, write the result to standard output.
+
+.TP
+\fB-O\fP \fIDIR\fR, \fB--output-dir=\fP\fIDIR\fR
+Create the directory \fIDIR\fR, and save the entire reduced dataset there.
+
+.RE
+These options are mutually exclusive.
+
+
+.SH REDUCTION
+
+Reduction proceeds as follows:
+
+.IP \[bu] 2
+The initial dataset is obtained after parsing and optimization. This is the prime dataset.
+.IP \[bu]
+The node tree is walked in a certain order. For each node in the tree:
+.RS
+.IP \[bu] 2
+\fBreduce\fP attempts to remove (or otherwise simplify) the node.
+
+A modified (candidate) version of the prime dataset is thus created.
+.IP \[bu]
+The candidate dataset is saved to a temporary directory.
+.IP \[bu]
+The oracle is invoked in this directory.
+.RS
+.IP \[bu] 2
+If the oracle exits with status 0, the candidate dataset is promoted as the new prime dataset.
+.IP \[bu]
+If the oracle exits with any other status, the candidate dataset is discarded.
+.RE
+.RE
+.IP \[bu]
+After iterating through all possible reductions with no further modifications,
+the prime dataset is produced as the final output.
+.RE
+
+Reduction options:
+
+.TP 7
+\fB--strategy=\fINAME\fR
+Set the strategy to use when reducing.
+
+Strategies are algorithms which dictate the order in which the node tree is walked.
+The following strategies are available:
+
+.RS
+
+.TP
+\fBindepth\fP
+Depth-first.
+
+.TP
+\fBinbreadth\fP (default)
+Breadth-first; always proceeds to the next level. Iterates until there are no successful reductions.
+
+.TP
+\fBcareful\fP
+Breadth-first; restarts at the top level after finishing a depth with any successful reductions, otherwise proceeds to the next depth.
+
+.TP
+\fBpingpong\fP
+Breadth-first; returns to the previous depth after finishing a depth with any successful reductions, otherwise proceeds to the next depth.
+
+.TP
+\fBlookback\fP
+Breadth-first; returns to the previous depth after finishing a depth with any successful reductions, otherwise proceeds to the next unvisited depth.
+
+.RE
+.RS
+
+The default strategy (\fBinbreadth\fP) is suitable for most workloads.
+For reductions in which the oracle must load and parse all input files,
+whether they're referenced from anywhere else or not, the \fBlookback\fP strategy may be faster.
+
+.RE
+
+.TP
+\fB--white-out\fR
+Replace characters in removed nodes with spaces instead of deleting them.
+
+Allows preserving line and column numbers in the output.
+
+
+.SH OBFUSCATION
+
+Obfuscation is an alternative mode, in which instead of reducing,
+\fBreduce\fP obfuscates the input by replacing identifiers with sequential strings.
+
+The oracle should thus be a command which verifies that the input
+continues to be syntactically valid (and satisfies the desired properties).
+
+Obfuscation options:
+
+.TP
+\fB--obfuscate\fR
+Set the mode to obfuscation.
+
+
+.TP
+\fB--keep-length\fR
+Use an alternative identifier generation algorithm, which preserves the length of obfuscated identifiers.
+
+Can be useful for e.g. demonstrating linker bugs, where the exact layout of object files is important.
+
+
+.SH FUZZING
+
+Fuzzing is an alternative mode, in which instead of reducing,
+\fBreduce\fP randomly permutates the input, and stops when the oracle exits with status \fB0\fP.
+
+The oracle should thus be a command which exits with status \fB0\fP if it detects that the input has some desired property,
+such as a compiler bug.
+
+In this mode, it is expected that the oracle does not exit with status \fB0\fP if given the input dataset.
+
+Fuzzing options:
+
+.TP
+\fB--fuzz\fR
+.br
+Set the mode to fuzzing.
+
+
+
+.SH SELECTION
+
+\fBreduce\fP can be told to not touch some parts of the input dataset, forbidding modifications to it.
+The options below each "paint" some subset of the node tree as to forbid or allow modifying it.
+
+If a node is forbidden, then the flag is implicitly propagated upwards, towards the root of the hierarchy.
+Sibling nodes are unaffected.
+
+The first option determines the initial color of the tree.
+For instance, \fB--allow=test\fP forbids modifying all nodes, and then allows modifying nodes covered by the string \fBtest\fP;
+whereas, \fB--forbid=test\fP leaves all nodes as allowed, and then forbids modifying nodes containing the string \fBtest\fP.
+
+Any number and combination of the switches below is allowed.
+They are order-sensitive, i.e., each one is applied as a painting operation on top of the previous one's result.
+
+Selection options:
+
+.TP
+\fB--forbid=\fIREGEXP\fR
+Do not modify nodes containing \fIREGEXP\fP.
+
+
+.TP
+\fB--allow=\fIREGEXP\fR
+Only modify nodes covered by \fIREGEXP\fP.
+
+
+.TP
+\fB--forbid-files=\fIPATTERN\fR
+Do not modify files whose paths glob-match \fIPATTERN\fR.
+
+
+.TP
+\fB--allow-files=\fIPATTERN\fR
+Only modify files whose paths glob-match \fIPATTERN\fR.
+
+Non-matching files are still loaded and parsed.
+
+
+.SH GENERAL OPTIONS
+
+
+.TP
+\fB--reject=\fIREGEXP\fR
+Reject modifications which cause \fIREGEXP\fP to occur in output.
+
+May be used multiple times.
+
+
+.TP
+\fB--temp-dir=\fIDIR\fR
+Write and run reduction candidates in this directory.
+
+By default, the system's default temporary directory will be used.
+
+
+.TP
+\fB-j\fR[\fIN\fR]
+Use \fIN\fP look-ahead processes.
+
+If \fIN\fP unspecified (\fB\-j\fP), the number of logical processors will be used.
+
+
+.TP
+\fB--no-save\fR
+Disable saving in-progress results.
+
+
+.TP
+\fB-h, --help\fR
+Show usage.
+
+
+.TP
+\fB-V, --version\fR
+Show program version.
+
+
+.SH DEVELOPMENT OPTIONS
+
+These options are mainly useful for debugging \fBreduce\fP,
+or creating tools on top of it:
+
+.TP
+\fB--no-redirect\fR
+Don't redirect the oracel's stdout/stderr streams to \fB/dev/null\fP (or the system's equivalent).
+
+.TP
+\fB--dump\fR
+Dump parsed tree to \fIINPUT\fP\fB.dump\fP.
+
+.TP
+\fB--dump-html\fR
+Dump parsed tree to \fIINPUT\fP\fB.html\fP.
+
+.TP
+\fB--dump-json\fR
+Dump parsed tree to \fIINPUT\fP\fB.json\fP.
+
+.TP
+\fB--trace\fR
+Save all attempted reductions to \fIDIR\fB.trace\fR.
+
+.TP
+\fB--cache=\fIDIR\fR
+Use \fIDIR\fP as persistent disk cache (in addition to the memory cache).
+
+Can be used to speed up repetitive reductions of the same input.
+
+The same oracle must be used for the same cache directory.
+
+.TP
+\fB--times\fR
+Display verbose spent time breakdown.
+
+.TP
+\fB--no-optimize\fR
+Disable tree optimization step.
+
+May be useful with \fB--dump\fP.
+
+
+.TP
+\fB--max-steps=\fIN\fR
+Perform no more than \fIN\fP steps when reducing.
+
+
+.SH BUGS
+Please report defects and enhancement requests to the GitHub issue tracker:
+
+.I https://github.com/CyberShadow/reduce/issues
+
+.SH AUTHORS
+
+\fBreduce\fR is written by Vladimir Panteleev <reduce@c\fRy.m\fRd> and contributors:
+
+.I https://github.com/CyberShadow/reduce/graphs/contributors
