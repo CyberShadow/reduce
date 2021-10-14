@@ -78,9 +78,7 @@ In our case, a syntax is an algorithm which splits an array of bytes into a hier
 
 Syntax options:
 
-\fB--syntax=\fP\fISYNTAX\fP
-.br
-\fB--syntax=\fP\fIPATTERN\fP:\fISYNTAX\fP
+\fB--syntax=\fP[\fIPATTERN\fP\fB:\fP]\fISYNTAX\fP[\fB(\fP\fINAME\fP\fB=\fP\fIVALUE\fP[\fB,\fP\fINAME\fP\fB=\fP\fIVALUE\fP]...\fB)\fP]
 .br
 .RS
 Adds a rule for which syntax to use when parsing \fIINPUT\fP files.
@@ -88,6 +86,27 @@ Adds a rule for which syntax to use when parsing \fIINPUT\fP files.
 \fIPATTERN\fP is a shell pattern (such as \fB*.txt\fP). If omitted, it defaults to all files (\fB*\fP).
 
 \fISYNTAX\fP is the name of a built-in or external syntax parser.
+
+\fISYNTAX\fP may optionally be followed by a list of \fINAME\fP\fB=\fP\fIVALUE\fP pairs,
+which configure additional parsing options.
+Each \fISYNTAX\fP implementation supports its own set of configurable options.
+
+This option is order-sensitive, i.e. it affects all \fIINPUT\fP paths that follow.
+
+Examples:
+
+.TP
+\fB--syntax=line\fP
+(parse all files with the \fBline\fP syntax)
+
+.TP
+\fB--syntax=*.txt:line\fP
+(parse only files with the \fB.txt\fP extension with the \fBline\fP syntax)
+
+.TP
+\fB--syntax=indent(tabwidth=8)\fP
+(parse all files with the \fBindent\fP syntax, and set the option \fBtabwidth\fP to \fB8\fP).
+.RE
 
 File parsing in done in two steps:
 
@@ -107,19 +126,61 @@ Otherwise, if the syntax to use (built-in or external) does not exist, the built
 (load the entire file into a single node, without further processing).
 
 .RE
-
-.TP
-\fB--syntax-\fISYNTAX\fP-\fINAME\fP=\fIVALUE\fP
-Configures the syntax parser \fISYNTAX\fP and sets the option \fINAME\fP to \fIVALUE\fP.
-
-Example: \fB--syntax-indent-tabwidth=8\fP will set the option \fBtabwidth\fP for the syntax \fBindent\fP to \fB8\fP.
-
-.RE
-These options are order-sensitive, i.e. they affect all \fIINPUT\fP paths that follow.
-
 Instructions for authoring an external syntax implementation can be found here:
 
 .I https://github.com/CyberShadow/reduce/wiki/External-syntax-implementations
+
+The following built-in syntaxes are implemented:
+
+.TP
+\fBfile\fP
+Load entire files only; no parsing is done.
+
+.TP
+\fBline\fP
+Split by line endings.
+
+.TP
+\fBnull\fP
+Split by the NUL character.
+
+.TP
+\fBword\fP
+Split into words (sequences of ASCII alphanumeric characters).
+
+.TP
+\fBindent\fP
+Like \fBline\fP, but also group nodes into a hierarchy depending on indentantion level (leading whitespace per line).
+
+Options:
+.RS
+.TP
+\fBtabwidth\fP=\fIWIDTH\fP
+Treat TAB characters as being equivalent to \fIWIDTH\fP spaces.
+.RE
+
+.TP
+\fBdiff\fP
+Parse as a unified diff (as produced by \fBdiff -u\fP or \fBgit diff\fP).
+
+.TP
+\fBc\fP, \fBd\fP
+Parse as source code in the corresponding programming language.
+
+Options:
+.RS
+.TP
+\fBstrip-comments\fP=\fIBOOLEAN\fP
+Remove comment tokens from source code after parsing.
+
+.TP
+\fBload-coverage\fP=\fIDIR\fP
+Load coverage information from \fIDIR\fP, and paint covered lines as forbidden for modification (see section "SELECTION").
+
+Currently, the only supported coverage format is the Digital Mars format (as produced by DMD-based compilers).
+
+.RE
+
 
 .SH OUTPUT
 
