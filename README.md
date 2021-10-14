@@ -1,11 +1,11 @@
 <!-- This file is best viewed on https://github.com/CyberShadow/reduce#readme. Apologies for all the HTML! -->
 <a href="https://github.com/CyberShadow/reduce/actions/workflows/test.yml"><img align="right" src="https://github.com/CyberShadow/reduce/actions/workflows/test.yml/badge.svg?branch=master" alt="test" /></a><a href="https://codecov.io/gh/CyberShadow/reduce"><img align="right" src="https://codecov.io/gh/CyberShadow/reduce/branch/master/graph/badge.svg?token=CxoRmYgdJp" alt="codecov" /></a>
-reduce
+<img src="https://dump.cy.md/f1717a55629613e95b41201f3923b9e0/test.svg" width="40" height="40" align="left">reduce
 ======
 
 <img align="right" src="https://dump.thecybershadow.net/6b58560174d8f1f5c0d15315fe6ab021/anim.svgz" title="Illustration of reducing a D program, with the condition that it successfully compiles, runs, and prints &quot;42&quot;">
 
-<img src="https://dump.cy.md/f1717a55629613e95b41201f3923b9e0/test.svg" width="64" height="64" align="left"> `reduce` is a general-purpose data reduction tool. 
+`reduce` is a general-purpose data reduction tool. 
 Given a dataset (in one or more files), it *reduces* it to a minimal variation 
 which still satisfies some condition specified by you.
 
