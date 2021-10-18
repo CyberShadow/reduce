@@ -134,7 +134,7 @@ The following built-in syntaxes are implemented:
 
 .TP
 \fBfile\fP
-Load entire files only; no parsing is done.
+Load all file contents into a single node; no parsing is done.
 
 .TP
 \fBline\fP
@@ -201,7 +201,7 @@ Output options:
 \fB-i\fR, \fB--in-place\fR
 Overwrite each \fIINPUT\fP with the result of reducing it.
 
-If \fIINPUT\fP is a directory, then contained files that were deleted as part of the reduction will be deleted in \fIINPUT\fP as well.
+Files that were deleted as part of the reduction will be deleted in \fIINPUT\fP as well.
 
 Note: \fBreduce\fP does not create backup files.
 
@@ -209,7 +209,7 @@ Note: \fBreduce\fP does not create backup files.
 \fB-o\fP \fIPATH\fR, \fB--output=\fP\fIPATH\fR
 Save the result of reducing the corresponding \fIINPUT\fP to the given location.
 
-If there in more than one \fIINPUT\fP, then there must be the same number of \fB-o\fP options.
+If there is more than one \fIINPUT\fP, then there must be the same number of \fB-o\fP options.
 
 If \fIPATH\fP is \fB-\fP, write the result to standard output.
 
@@ -228,7 +228,7 @@ Reduction proceeds as follows:
 .IP \[bu] 2
 The initial dataset is obtained after parsing and optimization. This is the prime dataset.
 .IP \[bu]
-The node tree is walked in a certain order. For each node in the tree:
+The dataset's node tree is walked in a certain order. For each node in the tree:
 .RS
 .IP \[bu] 2
 \fBreduce\fP attempts to remove (or otherwise simplify) the node.
@@ -375,6 +375,7 @@ Do not modify files whose paths glob-match \fIPATTERN\fR.
 Only modify files whose paths glob-match \fIPATTERN\fR.
 
 Non-matching files are still loaded and parsed.
+To avoid parsing a file, use the \fBfile\fP syntax instead (see section "SYNTAX").
 
 
 .SH GENERAL OPTIONS
