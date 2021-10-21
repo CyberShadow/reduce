@@ -33,7 +33,9 @@ Example applications
   If your compiler is called `gcc`, and it is crashing with the error message `internal compiler error`, 
   a typical invocation would be:
 
-      reduce 'gcc program.c 2>&1 | grep "internal compiler error"' program.c
+  ```shell
+  reduce 'gcc program.c 2>&1 | grep "internal compiler error"' program.c
+  ```
   </details>
 
 - <details><summary>Narrow down the cause of a confusing error message</summary><p></p>
@@ -49,7 +51,9 @@ Example applications
 
   The would-be invocation is similar to the above:
 
-      reduce 'foo-tool input.foo 2>&1 | grep "failed to frobnicate whatsits"' input.foo
+  ```shell
+  reduce 'foo-tool input.foo 2>&1 | grep "failed to frobnicate whatsits"' input.foo
+  ```
   </details>
 
 - <details><summary>Reduce a large Git commit to a minimal diff</summary><p></p>
@@ -63,11 +67,15 @@ Example applications
 
   1. Export the commit to a `.diff` file:
 
-         git -C /path/to/repo show badcommitsha1 > commit.patch
+     ```shell
+     git -C /path/to/repo show badcommitsha1 > commit.patch
+     ```
 
   2. Reset the repository to the bad commit's parent:
 
-         git -C /path/to/repo reset --hard badcommitsha1^
+     ```shell
+     git -C /path/to/repo reset --hard badcommitsha1^
+     ```
 
   3. Create `oracle.sh`, the test script:
 
@@ -88,7 +96,9 @@ Example applications
 
   5. Invoke `reduce` as:
 
-         reduce -f oracle.sh commit.patch
+     ```shell
+     reduce -f oracle.sh commit.patch
+     ```
   </details>
 
 - <details><summary>Reduce a Git commit set</summary><p></p>
@@ -105,11 +115,15 @@ Example applications
 
   1. Export the list of commits to a text file:
 
-         git -C /path/to/repo log --pretty=%H basecommitsha1.. > commits.txt
+     ```shell
+     git -C /path/to/repo log --pretty=%H basecommitsha1.. > commits.txt
+     ```
 
   2. Reset the repository to the base commit:
 
-         git -C /path/to/repo reset --hard basecommitsha1
+     ```shell
+     git -C /path/to/repo reset --hard basecommitsha1
+     ```
 
   3. Create `oracle.sh`, the test script:
 
@@ -130,7 +144,9 @@ Example applications
 
   5. Invoke `reduce` as:
 
-         reduce -f oracle.sh --syntax=lines commits.txt
+     ```shell
+     reduce -f oracle.sh --syntax=lines commits.txt
+     ```
   </details>
 
 - <details><summary>Obfuscate proprietary code before posting it online</summary><p></p>
@@ -146,7 +162,9 @@ Example applications
 
   A typical invocation would thus be:
 
-      reduce 'gcc program.c 2>&1 | grep "internal compiler error"' program.c --obfuscate
+  ```shell
+  reduce 'gcc program.c 2>&1 | grep "internal compiler error"' program.c --obfuscate
+  ```
   </details>
 
 
