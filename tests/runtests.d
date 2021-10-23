@@ -50,7 +50,7 @@ void main(string[] args)
 
 	stderr.writeln("Building...");
 	{
-		auto status = spawnProcess(["rdmd", "--build-only"] ~ flags ~ [reduce],
+		auto status = spawnProcess(["rdmd", "--build-only", "-of" ~ reduce, "-I../../src"] ~ flags ~ "../../src/reduce/reduce.d",
 			stdin, stdout, stderr, null, Config.none, tests[0]
 		).wait();
 		enforce(status == 0, "reduce build failed with status %s".format(status));

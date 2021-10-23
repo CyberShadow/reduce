@@ -3,5 +3,5 @@
 *.suo
 *.pdb
 *.o
-reduce
+/reduce
 /cov/
