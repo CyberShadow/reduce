@@ -2,7 +2,7 @@
 /// Written by Vladimir Panteleev <reduce@cy.md>
 /// License: Boost Software License, Version 1.0
 
-module reduce;
+module reduce.reduce;
 
 import core.atomic;
 import core.thread;
@@ -28,9 +28,7 @@ import std.stdio : stdout, stderr, File;
 import std.string;
 import std.typecons;
 
-import splitter;
-
-alias Splitter = splitter.Splitter;
+import reduce.splitter : Splitter, Entity, EntityRef, EntityHash, Address, splitterNames, ParseRule, ParseOptions, loadFiles, optimize, optimizeUntil, parseToWords;
 
 // Issue 314 workarounds
 alias std.string.join join;

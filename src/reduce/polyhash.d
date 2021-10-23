@@ -3,7 +3,7 @@
 /// Written by Vladimir Panteleev <reduce@cy.md>
 /// License: Boost Software License, Version 1.0
 
-module polyhash;
+module reduce.polyhash;
 
 import std.range.primitives;
 import std.traits;

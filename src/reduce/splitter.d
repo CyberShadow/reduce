@@ -2,7 +2,7 @@
 /// Written by Vladimir Panteleev <reduce@cy.md>
 /// License: Boost Software License, Version 1.0
 
-module splitter;
+module reduce.splitter;
 
 import std.ascii;
 import std.algorithm;
@@ -18,7 +18,7 @@ import std.string;
 import std.traits;
 import std.stdio : stderr;
 
-import polyhash;
+import reduce.polyhash;
 
 /// Represents an Entity's position within a program tree.
 struct Address
