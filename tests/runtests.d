@@ -78,9 +78,9 @@ void main(string[] args)
 		else
 			base = "src", target = null;
 		version (Windows)
-			enum testFile = "test.cmd";
+			enum testFile = "oracle.cmd";
 		else
-			enum testFile = "test.sh";
+			enum testFile = "oracle.sh";
 		auto tester = test ~ "/" ~ testFile;
 		auto testerCmd = ".." ~ dirSeparator ~ testFile;
 
