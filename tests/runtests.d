@@ -89,7 +89,7 @@ void main(string[] args)
 		if (tempDir.exists) tempDir.rmdirRecurse();
 		auto reducedDir = base ~ ".reduced";
 		if (reducedDir.exists) reducedDir.rmdirRecurse();
-		auto resultDir = base ~ ".result";
+		auto resultDir = base ~ ".expected";
 		if (resultDir.exists) resultDir.rmdirRecurse();
 		auto cacheDir = base ~ ".cache";
 		if (cacheDir.exists) cacheDir.rmdirRecurse();
