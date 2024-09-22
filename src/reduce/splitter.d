@@ -8,6 +8,7 @@ import std.ascii;
 import std.algorithm;
 import std.array;
 import std.conv;
+import std.datetime.systime;
 import std.exception;
 import std.file;
 import std.functional;
@@ -17,6 +18,8 @@ import std.stdio : File, stdin;
 import std.string;
 import std.traits;
 import std.stdio : stderr;
+import std.typecons;
+import std.utf : byChar;
 
 import reduce.polyhash;
 
@@ -66,8 +69,15 @@ final class Entity
 	Entity[] children;     /// This node's children nodes, e.g. the statements of the statement block.
 	string tail;           /// This node's "tail", e.g. "}" for a statement block.
 
-	string filename, contents;
-	@property bool isFile() { return filename != ""; }
+	string contents;
+
+	struct FileProperties
+	{
+		string name;       /// Relative to the reduction root
+		Nullable!uint mode; /// OS-specific (std.file.getAttributes)
+		Nullable!(SysTime[2]) times; /// Access and modification times
+	}
+	FileProperties* file;  /// If non-null, this node represents a file
 
 	bool isPair;           /// Internal hint for --dump output
 	bool noRemove;         /// Don't try removing this entity (children OK)
@@ -143,6 +153,7 @@ enum Splitter
 	D,         /// Parse D source code
 	diff,      /// Unified diffs
 	indent,    /// Indentation (Python, YAML...)
+	lisp,      /// Lisp and similar languages
 }
 immutable string[] splitterNames = [EnumMembers!Splitter].map!(e => e.text().toLower().chomp("_")).array();
 
@@ -167,15 +178,22 @@ struct ParseOptions
 	uint tabWidth;
 }
 
+version (Posix) {} else
+{
+	// Non-POSIX symlink stubs
+	string readLink(const(char)[]) { throw new Exception("Sorry, symbolic links are only supported on POSIX systems"); }
+	void symlink(const(char)[], const(char)[]) { throw new Exception("Sorry, symbolic links are only supported on POSIX systems"); }
+}
+
 /// Parse the given file/directory.
 /// For files, modifies `path` to be the base name for .test / .reduced directories.
 Entity loadFiles(ref string path, ParseOptions options)
 {
-	if (path.exists && path.isDir)
+	if (path != "-" && !path.isSymlink && path.exists && path.isDir)
 	{
 		auto set = new Entity();
-		foreach (string entry; dirEntries(path, SpanMode.breadth).array.sort!((a, b) => a.name < b.name))
-			if (isFile(entry))
+		foreach (string entry; dirEntries(path, SpanMode.breadth, /*followSymlink:*/false).array.sort!((a, b) => a.name < b.name))
+			if (isSymlink(entry) || isFile(entry) || isDir(entry))
 			{
 				assert(entry.startsWith(path));
 				auto name = entry[path.length+1..$];
@@ -244,8 +262,15 @@ immutable ParseRule[] defaultRules =
 [
 	{ "*.d"    , Splitter.D     },
 	{ "*.di"   , Splitter.D     },
+
 	{ "*.diff" , Splitter.diff  },
 	{ "*.patch", Splitter.diff  },
+
+	{ "*.lisp" , Splitter.lisp  },
+	{ "*.cl"   , Splitter.lisp  },
+	{ "*.lsp"  , Splitter.lisp  },
+	{ "*.el"   , Splitter.lisp  },
+
 	{ "*"      , Splitter.files },
 ];
 
@@ -262,35 +287,53 @@ void[] readFile(File f)
 
 Entity loadFile(string name, string path, ParseOptions options)
 {
-	stderr.writeln("Loading ", path);
-	auto contents = cast(string)readFile(path == "-" ? stdin : File(path, "rb"));
+	auto base = name.baseName();
+	Splitter splitterType = chain(options.rules, defaultRules).find!(rule => base.globMatch(rule.pattern)).front.splitter;
+
+	Nullable!uint mode;
+	if (path != "-")
+	{
+		mode = getLinkAttributes(path);
+		if (attrIsSymlink(mode.get()) || attrIsDir(mode.get()))
+			splitterType = Splitter.files;
+	}
+
+	stderr.writeln("Loading ", path, " [", splitterType, "]");
+	auto contents =
+		attrIsSymlink(mode.get(0)) ? path.readLink() :
+		attrIsDir(mode.get(0)) ? null :
+		cast(string)readFile(path == "-" ? stdin : File(path, "rb"));
 
 	if (options.mode == ParseOptions.Mode.json)
 		return loadJson(contents);
 
 	auto result = new Entity();
-	result.filename = name.replace(dirSeparator, `/`);
+	result.file = new Entity.FileProperties;
+	result.file.name = name.replace(dirSeparator, `/`);
+	result.file.mode = mode;
+	if (!mode.isNull() && !attrIsSymlink(mode.get()) && path != "-")
+	{
+		SysTime accessTime, modificationTime;
+		getTimes(path, accessTime, modificationTime);
+		result.file.times = [accessTime, modificationTime];
+	}
 	result.contents = contents;
 
-	auto base = name.baseName();
-	auto rule = chain(options.rules, defaultRules).find!(rule => base.globMatch(rule.pattern)).front;
-
-	final switch (rule.splitter)
+	final switch (splitterType)
 	{
 		case Splitter.files:
 			result.children = [new Entity(result.contents, null, null)];
-			return result;
+			break;
 		case Splitter.lines:
 			result.children = parseToLines(result.contents);
-			return result;
+			break;
 		case Splitter.words:
 			result.children = parseToWords(result.contents);
-			return result;
+			break;
 		case Splitter.null_:
 			result.children = parseToNull(result.contents);
-			return result;
+			break;
 		case Splitter.D:
-		{
 			if (result.contents.startsWith("Ddoc"))
 				goto case Splitter.files;
 
@@ -304,19 +347,32 @@ Entity loadFile(string name, string path, ParseOptions options)
 					assert(false);
 				case ParseOptions.Mode.source:
 					result.children = splitter.parse(result.contents);
-					return result;
+					break;
 				case ParseOptions.Mode.words:
 					result.children = splitter.parseToWords(result.contents);
-					return result;
+					break;
 			}
-		}
+			break;
 		case Splitter.diff:
 			result.children = parseDiff(result.contents);
-			return result;
+			break;
 		case Splitter.indent:
 			result.children = parseIndent(result.contents, options.tabWidth);
-			return result;
+			break;
+		case Splitter.lisp:
+			result.children = parseLisp(result.contents);
+			break;
 	}
+
+	debug
+	{
+		string resultContents;
+		void walk(Entity[] entities) { foreach (e; entities) { resultContents ~= e.head; walk(e.children); resultContents ~= e.tail; }}
+		walk(result.children);
+		assert(result.contents == resultContents, "Contents mismatch after splitting:\n" ~ resultContents);
+	}
+
+	return result;
 }
 
 // *****************************************************************************************************************************************************************************
@@ -889,6 +945,49 @@ struct DSplitter
 		}
 	}
 
+	// Join together module names. We should not attempt to reduce "import std.stdio" to "import std" (or "import stdio").
+	static void postProcessImports(ref Entity[] entities)
+	{
+		if (entities.length && entities[0].head.strip == "import" && !entities[0].children.length && !entities[0].tail.length)
+			foreach (entity; entities[1 .. $])
+			{
+				static void visit(Entity entity)
+				{
+					static bool isValidModuleName(string s) { return s.byChar.all!(c => isWordChar(c) || isWhite(c) || c == '.'); }
+					static bool canBeMerged(Entity entity)
+					{
+						return
+							isValidModuleName(entity.head) &&
+							entity.children.all!(child => canBeMerged(child)) &&
+							isValidModuleName(entity.tail);
+					}
+
+					if (canBeMerged(entity))
+					{
+						auto root = entity;
+						// Link all ancestors to the root, and in reverse, therefore making them inextricable.
+						void link(Entity entity)
+						{
+							entity.dependents ~= EntityRef(root);
+							// root.dependents ~= EntityRef(entity);
+							foreach (child; entity.children)
+								link(child);
+						}
+						foreach (child; entity.children)
+							link(child);
+					}
+					else
+					{
+						foreach (child; entity.children)
+							visit(child);
+					}
+				}
+
+				foreach (child; entity.children)
+					visit(child);
+			}
+	}
+
 	static void postProcessDependency(ref Entity[] entities)
 	{
 		if (entities.length < 2)
@@ -1037,7 +1136,7 @@ struct DSplitter
 		{
 			if (parenKeywordTokens.canFind(entities[i].token))
 			{
-				auto pparen = firstHead(entities[i+1]);
+				auto pparen = firstNonEmpty(entities[i+1]);
 				if (pparen
 				 && *pparen !is entities[i+1]
 				 && pparen.token == tokenLookup!"(")
@@ -1109,6 +1208,7 @@ struct DSplitter
 				postProcessRecursive(e.children);
 
 		postProcessSimplify(entities);
+		postProcessImports(entities);
 		postProcessTemplates(entities);
 		postProcessDependency(entities);
 		postProcessBlockKeywords(entities);
@@ -1245,16 +1345,18 @@ struct DSplitter
 		postProcessArgs(entities);
 	}
 
-	static Entity* firstHead(ref return Entity e)
+	static Entity* firstNonEmpty(ref return Entity e)
 	{
 		if (e.head.length)
 			return &e;
 		foreach (ref c; e.children)
 		{
-			auto r = firstHead(c);
+			auto r = firstNonEmpty(c);
 			if (r)
 				return r;
 		}
+		if (e.tail.length)
+			return &e;
 		return null;
 	}
 
@@ -1319,9 +1421,45 @@ unittest
 	assert(split2!("]", "[")("[foo] [bar]") == ["[foo] [bar]"]);
 }
 
+// From ae.utils.array
+template skipWhile(alias pred)
+{
+	T[] skipWhile(T)(ref T[] source, bool orUntilEnd = false)
+	{
+		enum bool isSlice = is(typeof(pred(source[0..1])));
+		enum bool isElem  = is(typeof(pred(source[0]   )));
+		static assert(isSlice || isElem, "Can't skip " ~ T.stringof ~ " until " ~ pred.stringof);
+		static assert(isSlice != isElem, "Ambiguous types for skipWhile: " ~ T.stringof ~ " and " ~ pred.stringof);
+
+		foreach (i; 0 .. source.length)
+		{
+			bool match;
+			static if (isSlice)
+				match = pred(source[i .. $]);
+			else
+				match = pred(source[i]);
+			if (!match)
+			{
+				auto result = source[0..i];
+				source = source[i .. $];
+				return result;
+			}
+		}
+
+		if (orUntilEnd)
+		{
+			auto result = source;
+			source = null;
+			return result;
+		}
+		else
+			return null;
+	}
+}
+
 Entity[] parseDiff(string s)
 {
-	return s
+	auto entities = s
 		.split2!("\n", "diff ")
 		.map!(
 			(string file)
@@ -1332,50 +1470,291 @@ Entity[] parseDiff(string s)
 		)
 		.array
 	;
+
+	// If a word occurs only in two or more (but not all) hunks,
+	// create dependency nodes which make `reduce` try reducing these
+	// hunks simultaneously.
+	{
+		auto allHunks = entities.map!(entity => entity.children).join;
+		auto hunkWords = allHunks
+			.map!(hunk => hunk.head)
+			.map!((text) {
+				bool[string] words;
+				while (text.length)
+				{
+					alias isWordChar = c => isAlphaNum(c) || c == '_';
+					text.skipWhile!(not!isWordChar)(true);
+					auto word = text.skipWhile!isWordChar(true);
+					if (word.length)
+						words[word] = true;
+				}
+				return words;
+			})
+			.array;
+
+		auto allWords = hunkWords
+			.map!(words => words.byPair)
+			.joiner
+			.assocArray;
+		string[bool[]] sets; // Deduplicated sets of hunks to try to remove at once
+		foreach (word; allWords.byKey)
+		{
+			immutable bool[] hunkHasWord = hunkWords.map!(c => !!(word in c)).array.assumeUnique;
+			auto numHunksWithWord = hunkHasWord.count!(b => b);
+			if (numHunksWithWord > 1 && numHunksWithWord < allHunks.length)
+				sets[hunkHasWord] = word;
+		}
+
+		foreach (set, word; sets)
+		{
+			auto e = new Entity();
+			debug e.comments ~= word;
+			e.dependents ~= allHunks.length.iota
+				.filter!(i => set[i])
+				.map!(i => EntityRef(allHunks[i]))
+				.array;
+			entities ~= e;
+		}
+	}
+
+	return entities;
+}
+
+size_t getIndent(string line, uint tabWidth, size_t lastIndent)
+{
+	size_t indent = 0;
+charLoop:
+	foreach (c; line)
+		switch (c)
+		{
+			case ' ':
+				indent++;
+				break;
+			case '\t':
+				indent += tabWidth;
+				break;
+			case '\r':
+			case '\n':
+				// Treat empty (whitespace-only) lines as belonging to the
+				// immediately higher (most-nested) block.
+				indent = lastIndent;
+				break charLoop;
+			default:
+				break charLoop;
+		}
+	return indent;
 }
 
 Entity[] parseIndent(string s, uint tabWidth)
 {
 	Entity[] root;
-	Entity[]*[] stack;
+	Entity[] stack;
 
 	foreach (line; s.split2!("\n", ""))
 	{
-		size_t indent = 0;
-	charLoop:
-		foreach (c; line)
-			switch (c)
-			{
-				case ' ':
-					indent++;
-					break;
-				case '\t':
-					indent += tabWidth;
-					break;
-				case '\r':
-				case '\n':
-					// Treat empty (whitespace-only) lines as belonging to the
-					// immediately higher (most-nested) block.
-					indent = stack.length;
-					break charLoop;
-				default:
-					break charLoop;
-			}
-
+		auto indent = getIndent(line, tabWidth, stack.length);
 		auto e = new Entity(line);
 		foreach_reverse (i; 0 .. min(indent, stack.length)) // non-inclusively up to indent
 			if (stack[i])
 			{
-				*stack[i] ~= e;
+				stack[i].children ~= e;
 				goto parentFound;
 			}
 		root ~= e;
 	parentFound:
 		stack.length = indent + 1;
-		stack[indent] = &e.children;
+		stack[indent] = new Entity;
+		e.children ~= stack[indent];
 	}
 
 	return root;
+}
+
+Entity[] parseLisp(string s)
+{
+	// leaf head: token (non-whitespace)
+	// leaf tail: whitespace
+	// non-leaf head: "(" and any whitespace
+	// non-leaf tail: ")" and any whitespace
+
+	size_t i;
+
+	size_t last;
+	scope(success) assert(last == s.length, "Incomplete slice");
+	string slice(void delegate() advance)
+	{
+		assert(last == i, "Non-contiguous slices");
+		auto start = i;
+		advance();
+		last = i;
+		return s[start .. i];
+	}
+
+	/// How many characters did `advance` move forward by?
+	size_t countAdvance(void delegate() advance)
+	{
+		auto start = i;
+		advance();
+		return i - start;
+	}
+
+	void advanceWhitespace()
+	{
+		while (i < s.length)
+		{
+			switch (s[i])
+			{
+				case ' ':
+				case '\t':
+				case '\r':
+				case '\n':
+				case '\f':
+				case '\v':
+					i++;
+					continue;
+
+				case ';':
+					i++;
+					while (i < s.length && s[i] != '\n')
+						i++;
+					continue;
+
+				default:
+					return; // stop
+			}
+			assert(false); // unreachable
+		}
+	}
+
+	void advanceToken()
+	{
+		assert(countAdvance(&advanceWhitespace) == 0);
+		assert(i < s.length);
+
+		switch (s[i])
+		{
+			case '(':
+			case ')':
+			case '[':
+			case ']':
+				assert(false);
+			case '"':
+				i++;
+				while (i < s.length)
+				{
+					switch (s[i])
+					{
+						case '"':
+							i++;
+							return; // stop
+
+						case '\\':
+							i++;
+							if (i < s.length)
+								i++;
+							continue;
+
+						default:
+							i++;
+							continue;
+					}
+					assert(false); // unreachable
+				}
+				break;
+			default:
+				while (i < s.length)
+				{
+					switch (s[i])
+					{
+						case ' ':
+						case '\t':
+						case '\r':
+						case '\n':
+						case '\f':
+						case '\v':
+						case ';':
+
+						case '"':
+						case '(':
+						case ')':
+						case '[':
+						case ']':
+							return; // stop
+
+						case '\\':
+							i++;
+							if (i < s.length)
+								i++;
+							continue;
+
+						default:
+							i++;
+							continue;
+					}
+					assert(false); // unreachable
+				}
+				break;
+		}
+	}
+
+	void advanceParen(char paren)
+	{
+		assert(i < s.length && s[i] == paren);
+		i++;
+		advanceWhitespace();
+	}
+
+	Entity[] parse(bool topLevel)
+	{
+		Entity[] result;
+		if (topLevel) // Handle reading whitespace at top-level
+		{
+			auto ws = slice(&advanceWhitespace);
+			if (ws.length)
+				result ~= new Entity(ws);
+		}
+
+		Entity parseParen(char open, char close)
+		{
+			auto entity = new Entity(slice({ advanceParen(open); }));
+			entity.children = parse(false);
+			if (i < s.length)
+				entity.tail = slice({ advanceParen(close); });
+			return entity;
+		}
+
+		while (i < s.length)
+		{
+			switch (s[i])
+			{
+				case '(':
+					result ~= parseParen('(', ')');
+					continue;
+				case '[':
+					result ~= parseParen('[', ']');
+					continue;
+
+				case ')':
+				case ']':
+					if (!topLevel)
+						break;
+					result ~= new Entity(slice({ advanceParen(s[i]); }));
+					continue;
+
+				default:
+					result ~= new Entity(
+						slice(&advanceToken),
+						null,
+						slice(&advanceWhitespace),
+					);
+					continue;
+			}
+			break;
+		}
+		return result;
+	}
+
+	return parse(true);
 }
 
 private:
@@ -1415,10 +1794,11 @@ Entity loadJson(string contents)
 
 		if (auto p = "filename" in v.object)
 		{
-			e.filename = p.str.buildNormalizedPath;
-			enforce(e.filename.length &&
-				!e.filename.isAbsolute &&
-				!e.filename.pathSplitter.canFind(`..`),
+			e.file = new Entity.FileProperties;
+			e.file.name = p.str.buildNormalizedPath;
+			enforce(e.file.name.length &&
+				!e.file.name.isAbsolute &&
+				!e.file.name.pathSplitter.canFind(`..`),
 				"Invalid filename in JSON file: " ~ p.str);
 		}
 

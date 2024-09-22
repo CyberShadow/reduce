@@ -1,4 +1,5 @@
 name "reduce"
 description "general-purpose data reduction tool"
+authors "Vladimir Panteleev"
 license "BSL-1.0"
 targetType "executable"

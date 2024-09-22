@@ -3,6 +3,12 @@
         "children": [
             {
                 "children": [
+                    {}
+                ],
+                "filename": "sub"
+            },
+            {
+                "children": [
                     {
                         "children": [
                             {
@@ -22,7 +28,7 @@
                                                         ]
                                                     },
                                                     {
-                                                        "label": "10",
+                                                        "label": "12",
                                                         "tail": "."
                                                     }
                                                 ]
@@ -34,7 +40,7 @@
                                                     }
                                                 ],
                                                 "dependents": [
-                                                    "10"
+                                                    "12"
                                                 ]
                                             }
                                         ]
@@ -62,23 +68,34 @@
                                             {
                                                 "children": [
                                                     {
+                                                        "dependents": [
+                                                            "21"
+                                                        ],
                                                         "head": "sub"
                                                     },
                                                     {
-                                                        "label": "21",
+                                                        "dependents": [
+                                                            "21"
+                                                        ],
+                                                        "label": "23",
                                                         "tail": "."
                                                     }
-                                                ]
+                                                ],
+                                                "label": "21"
                                             },
                                             {
                                                 "children": [
                                                     {
+                                                        "dependents": [
+                                                            "24"
+                                                        ],
                                                         "head": "sub"
                                                     }
                                                 ],
                                                 "dependents": [
-                                                    "21"
-                                                ]
+                                                    "23"
+                                                ],
+                                                "label": "24"
                                             }
                                         ]
                                     }

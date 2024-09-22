@@ -4,4 +4,6 @@
 *.pdb
 *.o
 /reduce
+/reduce_unittest
 /cov/
+/.dub/

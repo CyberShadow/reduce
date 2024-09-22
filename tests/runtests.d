@@ -14,7 +14,12 @@ import std.string;
 /// so we can distinguish changes in results due to `reduce` bugs or unexpected effects of changes,
 /// from changes due to differences in how D compiler versions compile D programs.
 // Note: when updating this, also update README.md.
-enum testSuiteDMDVersion = "v2.080.0";
+enum testSuiteDMDVersion = "v2.100.0";
+
+version (Windows)
+	enum scriptExtension = ".cmd";
+else
+	enum scriptExtension = ".sh";
 
 void main(string[] args)
 {
@@ -42,27 +47,53 @@ void main(string[] args)
 				dmdVersion, testSuiteDMDVersion);
 	}
 
-	auto reduce = buildPath("..", "..", "reduce");
-	auto flags = ["-g", "-debug", "-unittest", "-cov", "-version=testsuite"];
+	auto reduce = buildPath("..", "reduce").absolutePath;
+	auto flags = ["-g", "-debug", "-cov", "-version=testsuite"];
 	version (Windows)
 		flags ~= ["-m64"];
 	buildPath("..", "cov").rmdirRecurse.collectException;
 
 	stderr.writeln("Building...");
 	{
-		auto status = spawnProcess(["rdmd", "--build-only", "-of" ~ reduce, "-I../../src"] ~ flags ~ "../../src/reduce/reduce.d",
+		auto status = spawnProcess(["rdmd", "--build-only", "-of" ~ reduce, "-I../../src"] ~ flags ~ ["../../src/reduce/reduce.d"],
 			stdin, stdout, stderr, null, Config.none, tests[0]
 		).wait();
 		enforce(status == 0, "reduce build failed with status %s".format(status));
+	}
+
+	stderr.writeln("Running unittests...");
+	{
+		auto status = spawnProcess(["rdmd", "-unittest", "-of" ~ reduce ~ "_unittest", "-I../../src"] ~ flags ~ ["../../src/reduce/reduce.d"],
+			stdin, stdout, stderr, null, Config.none, tests[0]
+		).wait();
+		enforce(status == 0, "reduce unittest command with status %s".format(status));
 	}
 
 	auto mutex = new Object;
 
 	foreach (test; tests.parallel)
 	{
-		scope(failure) stderr.writefln("runtests: Error with test %s", test);
+		auto outputFile = test~"/output.txt";
+		outputFile.remove().collectException();
+
+		scope(failure)
+		{
+			stderr.writefln("runtests: Error with test %s", test);
+			if (outputFile.exists)
+				stderr.writefln("Output:\n----------\n%s----------", outputFile.readText);
+		}
 
 		string base, target;
+
+		if (!dirEntries(test, "mksrc.*", SpanMode.shallow).empty)
+		{
+			if (exists(test ~ "/mksrc" ~ scriptExtension))
+				enforce(spawnProcess([absolutePath(test ~ "/mksrc" ~ scriptExtension)], stdin, stdout, stderr, null,
+						Config.retainStdin | Config.retainStdout | Config.retainStderr, test
+					).wait() == 0, "mksrc script failed");
+			else
+				continue; // No mksrc script for this platform
+		}
 
 		if (exists(test ~ "/src"))
 			base = target = "src";
@@ -77,10 +108,8 @@ void main(string[] args)
 			base = target = "src.json";
 		else
 			base = "src", target = null;
-		version (Windows)
-			enum testFile = "oracle.cmd";
-		else
-			enum testFile = "oracle.sh";
+
+		enum testFile = "oracle" ~ scriptExtension;
 		auto tester = test ~ "/" ~ testFile;
 		auto testerCmd = ".." ~ dirSeparator ~ testFile;
 
@@ -97,7 +126,7 @@ void main(string[] args)
 		string[] opts;
 		auto optsFile = test ~ "/args.txt";
 		if (optsFile.exists)
-			opts = optsFile.readText().splitLines();
+			opts ~= optsFile.readText().splitLines();
 		if (opts.canFind("--in-place"))
 		{
 			copyRecurse(test ~ "/" ~ target, reducedDir);
@@ -106,7 +135,6 @@ void main(string[] args)
 
 		File input() { return target == "-" ? File(base, "rb") : stdin; }
 
-		auto outputFile = test~"/output.txt";
 		File output;
 		synchronized(mutex) output.open(outputFile, "wb");
 
