@@ -223,11 +223,46 @@ int main(string[] args)
 	if (showHelp || args.length == 1 || args.length>3)
 	{
 		stderr.writef(q"EOS
-Usage: %s [OPTION]... PATH TESTER
-PATH should contain a clean copy of the file-set to reduce.
-TESTER should be a shell command which returns 0 for a correct reduction,
-and anything else otherwise.
-Supported options:
+Usage: %1$s [OPTION]...    ORACLE         INPUT...
+       %1$s [OPTION]... -f ORACLE-PROGRAM INPUT...
+INPUT is a path to a file or directory to add to the dataset to reduce.
+ORACLE or ORACLE-PROGRAM should be a shell command or program
+respectively, which returns 0 for a correct reduction, and anything
+else otherwise.
+Input options:
+  -C PATH            Set the root for successive INPUT paths. Order-sensitive.
+Syntax options:
+  --syntax=[PATTERN:]SYNTAX[(NAME=VALUE[,NAME=VALUE]...)]
+                     Add a parsing rule. Order-sensitive.
+Output options:
+  -i, --in-place     Overwrite each INPUT with the result of reducing it.
+  -o, --output=PATH  Save the reduction result of one INPUT to PATH.
+  -O, --output-dir=DIR
+                     Create DIR, and save the entire reduced dataset there.
+Reduction options:
+  --strategy=NAME    Set the strategy to use when reducing
+                     (indepth/inbreadth/careful/pingpong/lookback).
+  --white-out        Replace removed nodes with whitespace.
+Obfuscation options:
+  --obfuscate        Set the mode to obfuscation.
+  --keep-length      Preserve length of obfuscated identifiers.
+Fuzzing options:
+  --fuzz             Set the mode to fuzzing.
+Dataset selection options:
+  --forbid=REGEXP    Do not modify nodes containing REGEXP.
+  --allow=REGEXP     Only modify nodes containing REGEXP.
+  --forbid-files=PATTERN
+                     Do not modify files whose paths glob-match PATTERN.
+  --allow-files=PATTERN
+                     Only modify files whose paths glob-match PATTERN.
+General options:
+  --reject=REGEXP    Reject modifications which cause REGEXP to occur.
+  --temp-dir=DIR     Write and run reduction candidates in this directory.
+  -j[N]              Use N look-ahead processes. Auto-detect N if omitted.
+  --no-save          Disable saving in-progress results.
+  -h, --help         Show usage.
+  -V, --version      Show program version.
+
   --force            Force reduction of unusual files
   --reduce-only MASK Only reduce paths glob-matching MASK
                        (may be used multiple times)
